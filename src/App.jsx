@@ -745,7 +745,8 @@ function LoginModal({ onClose, onOpenRegister, onOpenForgot }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (email === 'aethermindtech@gmail.com' && password === 'Nani@1409') {
+    const ADMIN_EMAILS = ['aethermindtech@gmail.com', 'kakkirenivishwas@gmail.com'];
+    if (ADMIN_EMAILS.includes(email) && password === 'Nani@1409') {
       localStorage.setItem('isAdmin', 'true');
       window.location.href = ROUTES.ADMIN;
       return;
@@ -761,6 +762,13 @@ function LoginModal({ onClose, onOpenRegister, onOpenForgot }) {
 
       if (authError) {
         throw authError;
+      }
+
+      const ADMIN_EMAILS = ['aethermindtech@gmail.com', 'kakkirenivishwas@gmail.com'];
+      if (ADMIN_EMAILS.includes(trimmedEmail)) {
+        localStorage.setItem('isAdmin', 'true');
+        window.location.href = ROUTES.ADMIN;
+        return;
       }
       
       const { data, error } = await supabase
