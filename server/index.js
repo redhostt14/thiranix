@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +17,11 @@ console.log("Starting server boot sequence...");
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.url);
+  next();
+});
 
 let razorpay;
 try {
@@ -88,9 +94,18 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
+app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+  res.status(500).json({
+    error: err.message,
+    stack: err.stack
+  });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log("PORT", process.env.PORT);
   console.log("SERVER STARTED");
+  console.log("DIST EXISTS:", fs.existsSync(path.join(__dirname, '../dist/index.html')));
   console.log(`Backend server running on port ${PORT}`);
 });
