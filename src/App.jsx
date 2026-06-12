@@ -1236,6 +1236,26 @@ function OnboardingPage() {
   const [collegeName, setCollegeName] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [discountStatus, setDiscountStatus] = useState('none'); // 'none', 'invalid', 'eyuv', 'founder'
+  const [certificateFee, setCertificateFee] = useState(199);
+
+  const applyReferral = () => {
+    const code = referralCode.trim();
+    if (code === 'Eyuv345') {
+      setDiscountStatus('eyuv');
+      setCertificateFee(60);
+    } else if (code === 'Vishwas1409') {
+      setDiscountStatus('founder');
+      setCertificateFee(1);
+    } else if (code === '') {
+      setDiscountStatus('none');
+      setCertificateFee(199);
+    } else {
+      setDiscountStatus('invalid');
+      setCertificateFee(199);
+    }
+  };
 
   useEffect(() => {
     if (!email) {
@@ -1259,53 +1279,12 @@ function OnboardingPage() {
     }
     
     try {
-      // --- TEMPORARY BYPASS FOR TESTING ---
-      const year = new Date().getFullYear();
-      const randomStr = Math.random().toString(36).substr(2, 5).toUpperCase();
-      const certId = `THX-${year}-${randomStr}`;
-      const studentId = 'STU-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-      const domain = localStorage.getItem('registeredDomain') || 'FullStack Developer';
-      
-      console.log('--- DATABASE UPDATE AUDIT ---');
-      console.log('BEFORE UPDATE: Attempting to update email:', email);
-      
-      const { error } = await supabase.from('registrations').update({ 
-          payment_status: 'success',
-          college_name: collegeName,
-          cert_id: certId,
-          student_id: studentId
-      }).ilike('email', email);
-
-      if (error) {
-         console.error("DATABASE RESPONSE: Error", error);
-         alert("DATABASE ERROR: " + error.message);
-         setLoading(false);
-         return;
-      }
-      
-      // CRITICAL CHECK 1: VERIFY DATABASE UPDATE ACTUALLY SUCCEEDS
-      const { data: verifyData, error: verifyError } = await supabase.from('registrations').select('*').ilike('email', email);
-      console.log('DATABASE RESPONSE: Success');
-      console.log('AFFECTED ROW COUNT:', verifyData ? verifyData.length : 0);
-      console.log('AFTER UPDATE (Fetched Record):', verifyData);
-      console.log('-----------------------------');
-
-      if (!verifyData || verifyData.length === 0) {
-        alert(`CRITICAL ERROR: Update reported success but row for '${email}' was not found! Please ensure you don't have RLS blocking updates.`);
-        setLoading(false);
-        return;
-      }
-      
-      // Navigate to dashboard where they can download the certificate
-      window.location.href = ROUTES.STUDENT_DASHBOARD;
-      // ------------------------------------
-      /* ORIGINAL RAZORPAY CODE
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       
       const response = await fetch(`${API_BASE}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 19900, currency: 'INR' })
+        body: JSON.stringify({ amount: certificateFee * 100, currency: 'INR' })
       });
       const order = await response.json();
       
@@ -1342,13 +1321,13 @@ function OnboardingPage() {
                   college_name: collegeName,
                   cert_id: certId,
                   student_id: studentId
-               }).eq('email', email);
+               }).ilike('email', email);
                
                alert('Payment successful! Generating your verified certificate now...');
                await generateCertificate(legalName, collegeName, domain, certId, studentId);
-               window.location.href = ROUTES.HOME; 
+               window.location.href = ROUTES.STUDENT_DASHBOARD; 
             } else {
-               await supabase.from('registrations').update({ payment_status: 'failed' }).eq('email', email);
+               await supabase.from('registrations').update({ payment_status: 'failed' }).ilike('email', email);
                alert('Payment verification failed');
             }
           } catch (err) {
@@ -1366,11 +1345,10 @@ function OnboardingPage() {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', async function (response) {
         console.error(response.error);
-        await supabase.from('registrations').update({ payment_status: 'failed' }).eq('email', email);
+        await supabase.from('registrations').update({ payment_status: 'failed' }).ilike('email', email);
         alert('Payment failed: ' + response.error.description);
       });
       rzp.open();
-      */
     } catch (err) {
       console.error(err);
       alert('Failed to initialize payment');
@@ -1435,9 +1413,44 @@ function OnboardingPage() {
                   required
                 />
                 <span className="text-xs text-slate-700 leading-relaxed font-medium">
-                  * For processing a certificate we may charge a minimal administrative fee of ₹199 for administrative costs.
+                  * For processing a certificate we may charge a minimal administrative fee of ₹{certificateFee} for administrative costs.
                 </span>
               </label>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Referral Code (Optional)</label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="Enter referral code" 
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+                />
+                <button type="button" onClick={applyReferral} className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-700 transition-colors">Apply</button>
+              </div>
+              
+              {discountStatus === 'eyuv' && (
+                <div className="mt-2 text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg">
+                  <p className="font-bold">Referral Applied</p>
+                  <p>Discount Activated</p>
+                  <p className="mt-1 font-semibold">Certificate Fee: ₹60</p>
+                </div>
+              )}
+              {discountStatus === 'founder' && (
+                <div className="mt-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 p-3 rounded-lg">
+                  <p className="font-bold">Founder Referral Applied</p>
+                  <p>Special Access Granted</p>
+                  <p className="mt-1 font-semibold">Certificate Fee: ₹1</p>
+                </div>
+              )}
+              {discountStatus === 'invalid' && (
+                <div className="mt-2 text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg">
+                  <p className="font-bold">Invalid Referral Code</p>
+                  <p className="mt-1 font-semibold">Normal Price: ₹199</p>
+                </div>
+              )}
             </div>
             
             <button 
@@ -1445,7 +1458,7 @@ function OnboardingPage() {
               disabled={!agreed || loading}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-md shadow-blue-500/30 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg"
             >
-              {loading ? 'Processing...' : 'Pay ₹199 & get Certified'}
+              {loading ? 'Processing...' : `Pay ₹${certificateFee} & get Certified`}
             </button>
           </form>
         </div>
