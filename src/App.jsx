@@ -1281,19 +1281,30 @@ function OnboardingPage() {
     try {
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       
+      const safeAmountInPaise = Math.round(Number(certificateFee) * 100);
+      
       const response = await fetch(`${API_BASE}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: certificateFee * 100, currency: 'INR' })
+        body: JSON.stringify({ amount: safeAmountInPaise, currency: 'INR' })
       });
       const order = await response.json();
       
       if (!response.ok) throw new Error(order.error || 'Failed to create order');
 
+      if (!order?.id) {
+         throw new Error("Order ID missing from backend response");
+      }
+      
+      const numericAmount = parseInt(order.amount, 10);
+      if (isNaN(numericAmount) || numericAmount < 100) {
+        throw new Error("Invalid or insufficient amount returned from backend");
+      }
+
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
+        amount: numericAmount,
+        currency: order.currency || "INR",
         name: "Thiranix Internship",
         description: "Administrative Fee",
         image: window.location.origin + "/thiranix_logo.png",
@@ -1341,6 +1352,17 @@ function OnboardingPage() {
         },
         theme: { color: "#2563eb" }
       };
+
+      console.log("========== PAYMENT DEBUG ==========");
+      console.log("Selected Amount:", certificateFee);
+      console.log("Referral Code:", referralCode);
+      console.log("Create Order Response:", order);
+      console.log("Order ID:", order?.id);
+      console.log("Order Amount:", order?.amount);
+      console.log("Order Currency:", order?.currency);
+      console.log("Razorpay Key:", options.key);
+      console.log("Checkout Options:", options);
+      console.log("===================================");
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', async function (response) {

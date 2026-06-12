@@ -42,12 +42,13 @@ app.post('/api/create-order', async (req, res) => {
   try {
     const { amount, currency, receipt } = req.body;
     
-    if (!amount || amount < 100) {
+    const numericAmount = parseInt(amount, 10);
+    if (isNaN(numericAmount) || numericAmount < 100) {
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
     const options = {
-      amount, // in paise
+      amount: numericAmount, // securely parsed to int in paise
       currency: currency || 'INR',
       receipt: receipt || `receipt_${Date.now()}`
     };
