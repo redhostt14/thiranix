@@ -3,6 +3,11 @@ import cors from 'cors';
 import Razorpay from 'razorpay';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: '.env.local' });
 
@@ -63,7 +68,15 @@ app.post('/api/verify-payment', (req, res) => {
   }
 });
 
+// Serve static files from the Vite build directory
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Fallback to index.html for React Router
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend server running on port ${PORT}`);
 });
