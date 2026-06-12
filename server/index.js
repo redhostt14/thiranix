@@ -11,14 +11,26 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: '.env.local' });
 
+console.log("Starting server boot sequence...");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+let razorpay;
+try {
+  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+    console.log("Razorpay initialized successfully");
+  } else {
+    console.warn("RAZORPAY ENV VARIABLES MISSING");
+  }
+} catch (e) {
+  console.error("Razorpay initialization failed:", e.message);
+}
 
 app.post('/api/create-order', async (req, res) => {
   try {
@@ -78,5 +90,7 @@ app.get(/.*/, (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
+  console.log("PORT", process.env.PORT);
+  console.log("SERVER STARTED");
   console.log(`Backend server running on port ${PORT}`);
 });
