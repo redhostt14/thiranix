@@ -45,10 +45,10 @@ const generateCertificate = async (name, college, domain, certId, studentId) => 
     try {
       const thiranixLogoBytes = await fetch('/thiranix-logo.png').then(res => res.arrayBuffer());
       const thiranixLogo = await pdfDoc.embedPng(thiranixLogoBytes);
-      const tDims = thiranixLogo.scaleToFit(280, 112);
+      const tDims = thiranixLogo.scaleToFit(380, 152);
       page.drawImage(thiranixLogo, {
         x: (width - tDims.width) / 2,
-        y: height - 135,
+        y: height - 150,
         width: tDims.width,
         height: tDims.height,
       });
