@@ -72,7 +72,7 @@ app.post('/api/verify-payment', (req, res) => {
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Fallback to index.html for React Router
-app.get('*', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
